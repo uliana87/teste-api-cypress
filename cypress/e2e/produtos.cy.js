@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import contrato from '../contracts/produtos.contract'
+const contrato = require('../contracts/produtos.contract'); // ALTERAÇÃO: trocado import por require
 
 describe('Testes da Funcionalidade Produtos', () => {
     let token
@@ -18,7 +18,6 @@ describe('Testes da Funcionalidade Produtos', () => {
             method: 'GET',
             url: 'produtos'
         }).then((response) => {
-            //expect(response.body.produtos[9].nome).to.equal('Produto EBAC 436746')
             expect(response.status).to.equal(200)
             expect(response.body).to.have.property('produtos')
             expect(response.duration).to.be.lessThan(20)
@@ -44,27 +43,34 @@ describe('Testes da Funcionalidade Produtos', () => {
     });
 
     it('Deve validar mensagem de erro ao cadastrar produto repetido', () => {
-        cy.cadastrarProduto(token, 'Produto EBAC Novo 1', 250, "Descrição do produto novo", 180)
-            .then((response) => {
-                expect(response.status).to.equal(400)
-                expect(response.body.message).to.equal('Já existe produto com esse nome')
-            })
-    });
+    let nomeProduto = 'Produto EBAC Novo 1';
+    
+    cy.cadastrarProduto(token, nomeProduto, 250, "Descrição do produto novo", 180)
+      .then(() => {
+        
+        cy.cadastrarProduto(token, nomeProduto, 250, "Descrição do produto novo", 180)
+          .then((response) => {
+            expect(response.status).to.equal(400)
+            expect(response.body.message).to.equal('Já existe produto com esse nome')
+          });
+      });
+});
 
     it('Deve editar um produto já cadastrado', () => {
         cy.request('produtos').then(response => {
             let id = response.body.produtos[0]._id
+            let nomeEditado = `Produto Editado ${Math.floor(Math.random() * 100000000)}` // NOME ÚNICO
             cy.request({
                 method: 'PUT', 
                 url: `produtos/${id}`,
                 headers: {authorization: token}, 
                 body: 
                 {
-                    "nome": "Produto Editado 45642083",
+                    "nome": nomeEditado,
                     "preco": 100,
                     "descricao": "Produto editado",
                     "quantidade": 100
-                  }
+                }
             }).then(response => {
                 expect(response.body.message).to.equal('Registro alterado com sucesso')
             })
